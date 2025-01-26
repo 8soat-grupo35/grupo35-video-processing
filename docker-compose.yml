@@ -1,0 +1,25 @@
+version: '3'
+services:
+  postgres:
+    image: "postgres"
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=root      
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastfood_app:
+    depends_on:
+      postgres:
+        condition: service_healthy  
+    container_name: fastfood_app
+    volumes:
+      - ./:/app
+    build: .
+    ports:
+      - "8000:8000"

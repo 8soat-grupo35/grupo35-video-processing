@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      name: postgres
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres
+
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_DB
+              value: root
+            - name: POSTGRES_PASSWORD
+              value: root
+            - name: POSTGRES_USER
+              value: root
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgresdata
+            - mountPath: /docker-entrypoint-initdb.d/docker-database-initial.sql
+              name: postgres-dbinit
+              subPath: docker-database-initial.sql
+          readinessProbe:
+            exec:
+              command: [ "psql", "-w", "-U", "root", "-d", "root", "-c", "SELECT 1" ]
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+          livenessProbe:
+            exec:
+              command: [ "psql", "-w", "-U", "root", "-d", "root", "-c", "SELECT 1" ]
+            initialDelaySeconds: 45
+            timeoutSeconds: 2
+      volumes:
+        - name: postgresdata
+          persistentVolumeClaim:
+            claimName: postgres-volume-claim
+        - configMap:
+            items:
+              - key: docker-database-initial.sql
+                path: docker-database-initial.sql
+            name: postgres-dbinit
+          name: postgres-dbinit
+      restartPolicy: Always

@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/8soat-grupo35/fastfood-order-production/internal/api/handlers"
+	"github.com/8soat-grupo35/fastfood-order-production/internal/usecases"
 	"net/http"
 
 	_ "github.com/8soat-grupo35/fastfood-order-production/docs"
@@ -32,13 +34,19 @@ func Start(cfg external.Config) {
 // @host localhost:8000
 // @BasePath /v1
 func newApp(cfg external.Config) *echo.Echo {
-	external.ConectaDB(cfg.DatabaseConfig.Host, cfg.DatabaseConfig.User, cfg.DatabaseConfig.Password, cfg.DatabaseConfig.DbName, cfg.DatabaseConfig.Port)
+	//external.ConectaDB(cfg.DatabaseConfig.Host, cfg.DatabaseConfig.User, cfg.DatabaseConfig.Password, cfg.DatabaseConfig.DbName, cfg.DatabaseConfig.Port)
 
 	app := echo.New()
 	app.GET("/swagger/*", echoSwagger.WrapHandler)
 	app.GET("/", func(echo echo.Context) error {
 		return echo.JSON(http.StatusOK, "Alive")
 	})
+
+	videoUploaderUseCase := usecases.NewVideoUploaderUseCase()
+
+	videoHandler := handlers.NewVideoHandler(videoUploaderUseCase)
+	videoGroupV1 := app.Group("/v1/videos")
+	videoGroupV1.POST("/upload", videoHandler.Upload)
 
 	return app
 }

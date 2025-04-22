@@ -78,13 +78,12 @@ func newApp(cfg external.Config) *echo.Echo {
 		),
 	)
 
-	app.Use(AuthenticationMiddleware())
+	app.Use(AuthenticationMiddleware(cfg))
 	{
 		videoGroupV1 := app.Group("/v1/videos")
-    videoGroupV1.POST("/upload", videoHandler.Upload)
-    videoGroupV1.GET("/user/:userId", videoHandler.ListByUser)
+		videoGroupV1.POST("/upload", videoHandler.Upload)
+		videoGroupV1.GET("/user/:userId", videoHandler.ListByUser)
 	}
-	
 
 	go statusHandler.UpdateStatus()
 

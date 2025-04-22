@@ -35,6 +35,11 @@ spec:
               secretKeyRef:
                 name: aws-secrets
                 key: access-session-token
+          - name: COGNITO_CLIENT_USER_POOL_ID
+            valueFrom:
+              secretKeyRef:
+                name: aws-secrets
+                key: cognito-client-user-pool-id
           - name: AWS_REGION
             value: us-east-1
           ports:

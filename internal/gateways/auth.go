@@ -25,13 +25,18 @@ type JWKS struct {
 }
 
 type Auth struct {
+	userPoolId     string
+	region         string
 	publicKeys     JWKS
 	publicKeysMap  map[string]*rsa.PublicKey
 	foundPublicKey *rsa.PublicKey
 }
 
-func NewAuthGateway() *Auth {
-	return &Auth{}
+func NewAuthGateway(userPoolId string, region string) *Auth {
+	return &Auth{
+		userPoolId: userPoolId,
+		region:     region,
+	}
 }
 
 func (a *Auth) ValidateToken(tokenString string) (*jwt.MapClaims, error) {
@@ -79,7 +84,9 @@ func (a *Auth) ValidateToken(tokenString string) (*jwt.MapClaims, error) {
 }
 
 func (a *Auth) getPublicKeys() error {
-	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", "us-east-1", "us-east-1_jJ85wjTux")
+	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", a.userPoolId, a.region)
+	fmt.Println("jwksURL", jwksURL)
+
 	resp, err := http.Get(jwksURL)
 	if err != nil {
 		return err

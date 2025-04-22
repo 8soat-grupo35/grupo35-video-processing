@@ -13,6 +13,8 @@ type Config struct {
 	ServerHost               string
 	SQSVideoProcessQueueName string
 	SQSVideoStatusQueueName  string
+	CognitoUserPoolClientId  string
+	Region                   string
 }
 
 var (
@@ -30,6 +32,8 @@ func GetConfig() Config {
 			ServerHost:               cfg.GetString("server.host"),
 			SQSVideoProcessQueueName: cfg.GetString("sqs_video_process_queue_name"),
 			SQSVideoStatusQueueName:  cfg.GetString("sqs_video_status_queue_name"),
+			CognitoUserPoolClientId:  cfg.GetString("COGNITO_CLIENT_USER_POOL_ID"),
+			Region:                   cfg.GetString("region"),
 		}
 	})
 
@@ -57,4 +61,6 @@ func initDefaults(config *viper.Viper) {
 	config.SetDefault("server.host", "0.0.0.0:8000")
 	config.SetDefault("sqs_video_process_queue_name", "video-process-queue")
 	config.SetDefault("sqs_video_status_queue_name", "video-status-api-queue")
+	config.SetDefault("region", "us-east-1")
+	config.SetDefault("COGNITO_CLIENT_USER_POOL_ID", "us-east-1_jJ85wjTux")
 }

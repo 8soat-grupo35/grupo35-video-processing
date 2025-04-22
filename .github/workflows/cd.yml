@@ -18,6 +18,8 @@ on:
         required: true
       CLUSTER_NAME:
         required: true
+      COGNITO_CLIENT_USER_POOL_ID:
+        required: true
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -53,9 +55,10 @@ jobs:
         run: |
           aws eks update-kubeconfig --name ${{ secrets.CLUSTER_NAME }} --region ${{ secrets.AWS_REGION_DEFAULT }}
           kubectl create secret generic aws-secrets \
+            --from-literal=cognito-client-user-pool-id=${{ secrets.COGNITO_CLIENT_USER_POOL_ID }} \
             --from-literal=access-key-id=${{ secrets.AWS_ACCESS_KEY_ID }} \
             --from-literal=secret-access-key=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            --from-literal=access-session-token=${{ secrets.AWS_SESSION_TOKEN }}
+            --from-literal=access-session-token=${{ secrets.AWS_SESSION_TOKEN }} --dry-run=client -o yaml | kubectl apply -f -
           envsubst < kubernetes/video-processing-deployment.yaml | kubectl apply -f -
           kubectl apply -f kubernetes/video-processing-service.yaml
           kubectl apply -f kubernetes/video-processing-hpa.yaml

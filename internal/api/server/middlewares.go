@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/external"
 	"github.com/8soat-grupo35/grupo35-video-processing/internal/gateways"
 	"github.com/labstack/echo/v4"
 )
 
-func AuthenticationMiddleware() echo.MiddlewareFunc {
+func AuthenticationMiddleware(cfg external.Config) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
@@ -17,7 +18,7 @@ func AuthenticationMiddleware() echo.MiddlewareFunc {
 				return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Authorization header is missing"})
 			}
 
-			authGateway := gateways.NewAuthGateway()
+			authGateway := gateways.NewAuthGateway(cfg.CognitoUserPoolClientId, cfg.Region)
 
 			claims, err := authGateway.ValidateToken(authHeader)
 

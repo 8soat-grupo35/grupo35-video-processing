@@ -6,6 +6,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/spf13/viper v1.20.1
+	github.com/stretchr/testify v1.10.0
+	go.uber.org/mock v0.5.1
 )
 
 require (
@@ -33,9 +35,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
@@ -51,13 +55,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.72
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.51.4
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.42.4
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.42.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.38.5
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/golang/mock v1.6.0
 	github.com/guregu/dynamo/v2 v2.3.0
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect

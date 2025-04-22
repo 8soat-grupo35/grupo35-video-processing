@@ -27,6 +27,7 @@ type dynamoAdapter struct {
 	table *string
 }
 
+//go:generate mockgen -source=dynamo_db.go -destination=mock/dynamo_adapter.go
 type DynamoAdapter interface {
 	SetTable(table string)
 	GetListByKey(key string, valueKey any) (value []map[string]any, err error)

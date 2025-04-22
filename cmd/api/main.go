@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/8soat-grupo35/fastfood-order-production/internal/api/server"
-	"github.com/8soat-grupo35/fastfood-order-production/internal/external"
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/api/server"
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/external"
 )
 
 func main() {

@@ -3,14 +3,19 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/8soat-grupo35/fastfood-order-production/internal/api/handlers"
-	"github.com/8soat-grupo35/fastfood-order-production/internal/usecases"
+
 	"net/http"
 
-	_ "github.com/8soat-grupo35/fastfood-order-production/docs"
-	"github.com/8soat-grupo35/fastfood-order-production/internal/external"
+	_ "github.com/8soat-grupo35/grupo35-video-processing/docs"
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/adapters/wrappers"
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/api/handlers"
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/external"
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/gateways"
+	"github.com/8soat-grupo35/grupo35-video-processing/internal/usecases"
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
+
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 )
 
 func Start(cfg external.Config) {
@@ -34,7 +39,14 @@ func Start(cfg external.Config) {
 // @host localhost:8000
 // @BasePath /v1
 func newApp(cfg external.Config) *echo.Echo {
-	//external.ConectaDB(cfg.DatabaseConfig.Host, cfg.DatabaseConfig.User, cfg.DatabaseConfig.Password, cfg.DatabaseConfig.DbName, cfg.DatabaseConfig.Port)
+	database := external.ConectaDB(cfg)
+
+	awsConfig, err := awsConfig.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+	fmt.Println("AWS Config loaded")
 
 	app := echo.New()
 	app.GET("/swagger/*", echoSwagger.WrapHandler)
@@ -42,9 +54,21 @@ func newApp(cfg external.Config) *echo.Echo {
 		return echo.JSON(http.StatusOK, "Alive")
 	})
 
-	videoUploaderUseCase := usecases.NewVideoUploaderUseCase()
+	sqsClient := wrappers.NewSQSClient(awsConfig)
+	s3Client := wrappers.NewS3Client(awsConfig)
 
-	videoHandler := handlers.NewVideoHandler(videoUploaderUseCase)
+	videoHandler := handlers.NewVideoHandler(
+		usecases.NewTransferVideo(
+			gateways.NewS3Gateway(s3Client),
+		),
+		usecases.NewVideoProcessSender(
+			gateways.NewSQSGateway(sqsClient, cfg.SQSVideoProcessQueueName, 10),
+		),
+		usecases.NewVideoRepository(
+			gateways.NewDynamoGateway(external.NewDynamoAdapter(database)),
+		),
+	)
+
 	videoGroupV1 := app.Group("/v1/videos")
 	videoGroupV1.POST("/upload", videoHandler.Upload)
 

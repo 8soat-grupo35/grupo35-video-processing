@@ -55,25 +55,38 @@ func newApp(cfg external.Config) *echo.Echo {
 		return echo.JSON(http.StatusOK, "Alive")
 	})
 
-	sqsClient := wrappers.NewSQSClient(awsConfig)
-	s3Client := wrappers.NewS3Client(awsConfig)
+	sqsClient := wrappers.NewSQSClient(awsConfig, cfg.IsLocalEnvironment())
+	s3Client := wrappers.NewS3Client(awsConfig, cfg.IsLocalEnvironment())
+	dynamoGateway := gateways.NewDynamoGateway(external.NewDynamoAdapter(database))
 
 	videoHandler := handlers.NewVideoHandler(
 		usecases.NewTransferVideo(
 			gateways.NewS3Gateway(s3Client),
 		),
-		usecases.NewVideoProcessSender(
+		usecases.NewProcessVideoSender(
 			gateways.NewSQSGateway(sqsClient, cfg.SQSVideoProcessQueueName, 10),
 		),
 		usecases.NewVideoRepository(
-			gateways.NewDynamoGateway(external.NewDynamoAdapter(database)),
+			dynamoGateway,
 		),
 	)
+
+	statusHandler := handlers.NewStatusHandler(
+		usecases.NewStatusVideoConsumer(
+			gateways.NewSQSGateway(sqsClient, cfg.SQSVideoStatusQueueName, 10),
+			dynamoGateway,
+		),
+	)
+
 	app.Use(AuthenticationMiddleware())
 	{
 		videoGroupV1 := app.Group("/v1/videos")
-		videoGroupV1.POST("/upload", videoHandler.Upload)
+    videoGroupV1.POST("/upload", videoHandler.Upload)
+    videoGroupV1.GET("/user/:userId", videoHandler.ListByUser)
 	}
+	
+
+	go statusHandler.UpdateStatus()
 
 	return app
 }

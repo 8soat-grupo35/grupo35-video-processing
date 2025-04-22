@@ -27,21 +27,22 @@ func (s *S3Gateway) SetBucketName(bucketName string) {
 	s.bucketName = &bucketName
 }
 
-func (s *S3Gateway) UploadFile(key string, fileData []byte) error {
+func (s *S3Gateway) UploadFile(key string, fileData []byte, contentType string) error {
 	if s.bucketName == nil {
 		return errors.New("bucket name is not set")
 	}
 
-	fmt.Printf("Uploading file to S3 with key: %s\n", key)
+	fmt.Printf("Uploading file to S3 with key: %s, size: %d bytes\n", key, len(fileData))
 
 	_, err := s.client.Upload(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(*s.bucketName),
-		Key:    aws.String(key),
-		Body:   bytes.NewReader(fileData),
+		Bucket:      aws.String(*s.bucketName),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(fileData),
+		ContentType: aws.String(contentType),
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to upload file: %w", err)
+		return err
 	}
 
 	return nil

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-processing-app
+  labels:
+    app: video-processing-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-processing-app
+  template:
+    metadata:
+      name: video-processing-app
+      labels:
+        app: video-processing-app
+    spec:
+      containers:
+        - name: video-processing-app
+          image: video-processing-app
+          imagePullPolicy: Always
+          env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: aws-secrets
+                key: access-key-id
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: aws-secrets
+                key: secret-access-key
+          - name: AWS_SESSION_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: aws-secrets
+                key: access-session-token
+          - name: AWS_REGION
+            value: us-east-1
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 45
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+              scheme: HTTP
+            initialDelaySeconds: 40
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1"
+      restartPolicy: Always

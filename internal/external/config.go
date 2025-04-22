@@ -3,6 +3,7 @@ package external
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -10,17 +11,8 @@ import (
 
 type Config struct {
 	ServerHost               string
-	Environment              string
 	SQSVideoProcessQueueName string
 	SQSVideoStatusQueueName  string
-}
-
-type DatabaseConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DbName   string
 }
 
 var (
@@ -36,7 +28,6 @@ func GetConfig() Config {
 		}
 		config = Config{
 			ServerHost:               cfg.GetString("server.host"),
-			Environment:              cfg.GetString("environment"),
 			SQSVideoProcessQueueName: cfg.GetString("sqs_video_process_queue_name"),
 			SQSVideoStatusQueueName:  cfg.GetString("sqs_video_status_queue_name"),
 		}
@@ -45,7 +36,12 @@ func GetConfig() Config {
 	return config
 }
 
-func initConfig() (viper.Viper, error) {
+func (c Config) IsLocalEnvironment() bool {
+	environment := os.Getenv("environment")
+	return environment == "development" || environment == "local"
+}
+
+func initConfig() (*viper.Viper, error) {
 	cfg := viper.New()
 	var err error
 	initDefaults(cfg)
@@ -54,11 +50,11 @@ func initConfig() (viper.Viper, error) {
 		val := cfg.Get(key)
 		cfg.Set(key, val)
 	}
-	return *cfg, err
+	return cfg, err
 }
 
 func initDefaults(config *viper.Viper) {
 	config.SetDefault("server.host", "0.0.0.0:8000")
 	config.SetDefault("sqs_video_process_queue_name", "video-process-queue")
-	config.SetDefault("sqs_video_status_queue_name", "video-status-queue")
+	config.SetDefault("sqs_video_status_queue_name", "video-status-api-queue")
 }

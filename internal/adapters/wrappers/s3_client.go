@@ -17,7 +17,20 @@ type S3Client struct {
 	client *s3.Client
 }
 
-func NewS3Client(cfg aws.Config) IS3Client {
+func NewS3Client(cfg aws.Config, useLocalStack bool) IS3Client {
+	if useLocalStack {
+		s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+			o.EndpointResolver = s3.EndpointResolverFunc(func(region string, options s3.EndpointResolverOptions) (aws.Endpoint, error) {
+				return aws.Endpoint{
+					URL:           "http://localhost:4566",
+					SigningRegion: region,
+				}, nil
+			})
+		})
+		return S3Client{
+			client: s3Client,
+		}
+	}
 	return S3Client{
 		client: s3.NewFromConfig(cfg),
 	}

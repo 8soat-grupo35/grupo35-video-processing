@@ -1,0 +1,48 @@
+name: Tests
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go 1.23.x
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          fetch-depth: 0
+      # You can test your matrix by printing the current Go version
+      - name: Display Go version
+        run: go version
+      
+      - name: Install mockgen
+        run: go install github.com/golang/mock/mockgen@v1.6.0
+      
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Generate mocks
+        run: go generate ./...
+      
+      - name: Run tests
+        run: go test -short -coverprofile=cov.out $(go list ./internal/... | grep -v /mock)
+
+      - name: Start test environment
+        run: docker compose -f docker-compose-test.yml up -d
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          
+      - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        if: github.ref == 'refs/heads/main'
+        with:
+          pollingTimeoutSec: 600
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

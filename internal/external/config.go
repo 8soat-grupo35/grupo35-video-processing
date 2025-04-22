@@ -9,8 +9,10 @@ import (
 )
 
 type Config struct {
-	ServerHost     string
-	DatabaseConfig DatabaseConfig
+	ServerHost               string
+	Environment              string
+	SQSVideoProcessQueueName string
+	SQSVideoStatusQueueName  string
 }
 
 type DatabaseConfig struct {
@@ -33,14 +35,10 @@ func GetConfig() Config {
 			fmt.Println(context.Background(), err, "could not load usecase configuration")
 		}
 		config = Config{
-			ServerHost: cfg.GetString("server.host"),
-			DatabaseConfig: DatabaseConfig{
-				Host:     cfg.GetString("database.host"),
-				Port:     cfg.GetString("database.port"),
-				User:     cfg.GetString("database.user"),
-				Password: cfg.GetString("database.password"),
-				DbName:   cfg.GetString("database.dbname"),
-			},
+			ServerHost:               cfg.GetString("server.host"),
+			Environment:              cfg.GetString("environment"),
+			SQSVideoProcessQueueName: cfg.GetString("sqs_video_process_queue_name"),
+			SQSVideoStatusQueueName:  cfg.GetString("sqs_video_status_queue_name"),
 		}
 	})
 
@@ -61,9 +59,6 @@ func initConfig() (viper.Viper, error) {
 
 func initDefaults(config *viper.Viper) {
 	config.SetDefault("server.host", "0.0.0.0:8000")
-	config.SetDefault("database.host", "postgres")
-	config.SetDefault("database.port", "5432")
-	config.SetDefault("database.user", "root")
-	config.SetDefault("database.password", "root")
-	config.SetDefault("database.dbname", "root")
+	config.SetDefault("sqs_video_process_queue_name", "video-process-queue")
+	config.SetDefault("sqs_video_status_queue_name", "video-status-queue")
 }

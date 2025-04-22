@@ -44,20 +44,6 @@ spec:
             value: us-east-1
           ports:
             - containerPort: 8000
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 8000
-              scheme: HTTP
-            initialDelaySeconds: 135
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 8000
-              scheme: HTTP
-            initialDelaySeconds: 120
-            periodSeconds: 10
           resources:
             requests:
               memory: "256Mi"
@@ -65,4 +51,3 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "1"
-      restartPolicy: Always

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -13,16 +14,49 @@ import (
 
 type VideoHandler struct {
 	transferVideoUseCase usecases.TransferVideoUseCase
-	videoProcessSender   usecases.VideoProcessSender
+	processVideoSender   usecases.ProcessVideoSender
 	videoRepository      usecases.VideoRepository
 }
 
-func NewVideoHandler(transferUseCase usecases.TransferVideoUseCase, videoProcessSender usecases.VideoProcessSender, videoRepository usecases.VideoRepository) VideoHandler {
+func NewVideoHandler(transferUseCase usecases.TransferVideoUseCase, processVideoSender usecases.ProcessVideoSender, videoRepository usecases.VideoRepository) VideoHandler {
 	return VideoHandler{
 		transferVideoUseCase: transferUseCase,
-		videoProcessSender:   videoProcessSender,
+		processVideoSender:   processVideoSender,
 		videoRepository:      videoRepository,
 	}
+}
+
+// ListByUser handles the request to list videos by a specific user.
+//
+// @Summary List videos by user
+// @Description Retrieves a list of videos associated with a specific user ID.
+// @Tags Videos
+// @Accept json
+// @Produce json
+// @Param userId path string true "User ID"
+// @Success 200 {array} Video "List of videos"
+// @Failure 400 {string} string "userID is required"
+// @Failure 404 {string} string "No videos found for this user"
+// @Failure 500 {string} string "Internal server error"
+// @Router /videos/user/{userId} [get]
+func (v *VideoHandler) ListByUser(c echo.Context) error {
+	userID := c.Param("userId")
+
+	if userID == "" {
+		return c.JSON(http.StatusBadRequest, "userID is required")
+	}
+
+	videos, err := v.videoRepository.GetByUserId(userID)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	if len(videos) == 0 {
+		return c.JSON(http.StatusNotFound, "No videos found for this user")
+	}
+
+	return c.JSON(http.StatusOK, videos)
 }
 
 // Upload godoc
@@ -38,14 +72,14 @@ func NewVideoHandler(transferUseCase usecases.TransferVideoUseCase, videoProcess
 // @Router /v1/videos/upload [post]
 func (v *VideoHandler) Upload(c echo.Context) error {
 	// Valida e obtém os arquivos do formulário
-	videoFiles, userID, err := v.validateAndExtractFiles(c)
+	videoFiles, user, err := v.validateAndExtractFiles(c)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	// Processa cada arquivo de vídeo
 	for _, file := range videoFiles {
-		if err := v.processVideoFile(c, file, userID); err != nil {
+		if err := v.processVideoFile(c, file, *user); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 	}
@@ -54,27 +88,37 @@ func (v *VideoHandler) Upload(c echo.Context) error {
 }
 
 // validateAndExtractFiles valida os arquivos do formulário e extrai os vídeos e o userID.
-func (v *VideoHandler) validateAndExtractFiles(c echo.Context) ([]*multipart.FileHeader, string, error) {
+func (v *VideoHandler) validateAndExtractFiles(c echo.Context) ([]*multipart.FileHeader, *entities.User, error) {
 	files, err := c.MultipartForm()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to parse form: %w", err)
+		return nil, nil, fmt.Errorf("failed to parse form: %w", err)
 	}
 
 	userID := c.FormValue("userID")
 	if userID == "" {
-		return nil, "", fmt.Errorf("userID is required")
+		return nil, nil, fmt.Errorf("userID is required")
+	}
+
+	userEmail := c.FormValue("userEmail")
+	if userEmail == "" {
+		return nil, nil, fmt.Errorf("userEmail is required")
+	}
+
+	user := &entities.User{
+		ID:    userID,
+		Email: userEmail,
 	}
 
 	videoFiles := files.File["videos"]
 	if len(videoFiles) == 0 {
-		return nil, "", fmt.Errorf("no video files provided")
+		return nil, nil, fmt.Errorf("no video files provided")
 	}
 
-	return videoFiles, userID, nil
+	return videoFiles, user, nil
 }
 
 // processVideoFile processa um único arquivo de vídeo.
-func (v *VideoHandler) processVideoFile(c echo.Context, file *multipart.FileHeader, userID string) error {
+func (v *VideoHandler) processVideoFile(c echo.Context, file *multipart.FileHeader, user entities.User) error {
 	// Abre o arquivo
 	src, err := file.Open()
 	if err != nil {
@@ -83,30 +127,37 @@ func (v *VideoHandler) processVideoFile(c echo.Context, file *multipart.FileHead
 	defer src.Close()
 
 	// Lê os dados do arquivo
-	videoData := make([]byte, file.Size)
-	if _, err := src.Read(videoData); err != nil {
+	videoData, err := io.ReadAll(src)
+	if err != nil {
 		return fmt.Errorf("failed to read file: %w", err)
 	}
 
 	// Gera a chave para o arquivo no S3
-	key := fmt.Sprintf("videos/%d_%s", time.Now().UnixNano(), file.Filename)
+	key := fmt.Sprintf("%d_%s", time.Now().UnixNano(), file.Filename)
 
+	contentType := http.DetectContentType(videoData)
 	// Faz o upload do vídeo para o S3
-	if err := v.transferVideoUseCase.UploadVideo(key, videoData); err != nil {
-		return fmt.Errorf("failed to upload video to S3: %w", err)
+	if err := v.transferVideoUseCase.UploadVideo(key, videoData, contentType); err != nil {
+		fmt.Errorf("failed to upload video to S3: %w", err)
+	}
+
+	// Cria mensagem para o SQS
+	videoMessage := entities.VideoMessage{
+		User:      user,
+		VideoPath: key,
+	}
+
+	// Envia o vídeo para a fila de processamento
+	if err := v.processVideoSender.Send(videoMessage); err != nil {
+		return fmt.Errorf("failed to send video to processing queue: %w", err)
 	}
 
 	// Cria a entidade do vídeo
 	video := entities.Video{
-		UserID:    userID,
+		UserID:    user.ID,
 		Path:      key,
 		Status:    entities.VideoStatusInProcessing,
 		CreatedAt: time.Now().Format(time.RFC3339),
-	}
-
-	// Envia o vídeo para a fila de processamento
-	if err := v.videoProcessSender.Send(video); err != nil {
-		return fmt.Errorf("failed to send video to processing queue: %w", err)
 	}
 
 	// Salva os metadados do vídeo no DynamoDB

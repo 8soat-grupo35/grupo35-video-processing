@@ -25,3 +25,6 @@ go.work.sum
 .env
 .vscode/launch.json
 .DS_Store
+.idea/grupo35-video-processing.iml
+.idea/modules.xml
+.idea/vcs.xml

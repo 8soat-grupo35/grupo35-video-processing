@@ -50,6 +50,7 @@ func newApp(cfg external.Config) *echo.Echo {
 
 	app := echo.New()
 	app.GET("/swagger/*", echoSwagger.WrapHandler)
+
 	app.GET("/", func(echo echo.Context) error {
 		return echo.JSON(http.StatusOK, "Alive")
 	})
@@ -77,9 +78,12 @@ func newApp(cfg external.Config) *echo.Echo {
 		),
 	)
 
-	videoGroupV1 := app.Group("/v1/videos")
-	videoGroupV1.POST("/upload", videoHandler.Upload)
-	videoGroupV1.GET("/user/:userId", videoHandler.ListByUser)
+	app.Use(AuthenticationMiddleware(cfg))
+	{
+		videoGroupV1 := app.Group("/v1/videos")
+		videoGroupV1.POST("/upload", videoHandler.Upload)
+		videoGroupV1.GET("/user/:userId", videoHandler.ListByUser)
+	}
 
 	go statusHandler.UpdateStatus()
 

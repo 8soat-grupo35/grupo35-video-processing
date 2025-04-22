@@ -2,6 +2,7 @@ package gateways
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/8soat-grupo35/grupo35-video-processing/internal/adapters/wrappers"
@@ -54,16 +55,24 @@ func (s SQSGateway) ConsumeMessages(consumeFn func(message types.Message)) error
 }
 
 func (s SQSGateway) SendMessage(message any) error {
-	_, err := s.client.SendMessage(context.TODO(), &sqs.SendMessageInput{
+	convertedMessage, err := json.Marshal(message)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("sending message to sqs: %v\n", message)
+
+	_, err = s.client.SendMessage(context.TODO(), &sqs.SendMessageInput{
 		QueueUrl:    aws.String(s.queueName),
-		MessageBody: aws.String(message.(string)),
+		MessageBody: aws.String(string(convertedMessage)),
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to send message: %w", err)
+		return err
 	}
 
-	fmt.Println("Message sent to SQS: ", message)
+	fmt.Printf("Message sent to SQS: %v\n", message)
 
 	return nil
 }

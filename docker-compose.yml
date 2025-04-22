@@ -1,12 +1,16 @@
-version: '3'
+version: "3.8"
 services:
-  grupo35_video_processing_app:
-    depends_on:
-      postgres:
-        condition: service_healthy  
-    container_name: grupo35_video_processing_app
-    volumes:
-      - ./:/app
-    build: .
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
     ports:
-      - "8000:8000"
+      - "4566:4566" # Porta principal para todos os serviços
+      - "4571:4571" # Porta para o serviço de SQS
+    environment:
+      - SERVICES=s3,sqs,dynamodb
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - LAMBDA_EXECUTOR=docker
+    volumes:
+      - "./localstack-data:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"

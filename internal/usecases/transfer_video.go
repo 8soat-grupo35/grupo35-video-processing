@@ -17,13 +17,13 @@ func NewTransferVideo(s3 repository.S3) usecases.TransferVideoUseCase {
 	}
 }
 
-func (t TransferVideoUseCase) UploadVideo(key string, videoData []byte) (err error) {
+func (t TransferVideoUseCase) UploadVideo(key string, videoData []byte, contentType string) (err error) {
 	fmt.Println("Uploading video to S3")
 	t.S3.SetBucketName("grupo35-video-uploaded")
-	err = t.S3.UploadFile(key, videoData)
+	err = t.S3.UploadFile(key, videoData, contentType)
 
 	if err != nil {
-		return fmt.Errorf("upload video failed: %w", err)
+		return err
 	}
 
 	fmt.Println("Video uploaded successfully to S3")

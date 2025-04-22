@@ -23,15 +23,15 @@ func ConectaDB(config Config) *dynamo.DB {
 		log.Panic("Erro na conexao com banco de dados")
 	}
 
-	fmt.Println(config.Environment)
-	if config.Environment == "development" {
-		baseURL := "http://localstack:4566"
+	fmt.Println(config.IsLocalEnvironment())
+	if config.IsLocalEnvironment() {
+		baseURL := "http://localhost:4566"
 		cfg.BaseEndpoint = &baseURL
 	}
 
 	DB = dynamo.New(cfg)
 
-	err = DB.CreateTable("production_order", entities.Video{}).OnDemand(true).Run(context.TODO())
+	err = DB.CreateTable("videos", entities.Video{}).OnDemand(true).Run(context.TODO())
 
 	if err != nil {
 		log.Println(err.Error())

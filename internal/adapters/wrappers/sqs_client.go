@@ -35,7 +35,17 @@ func (s *SQSClient) SendMessage(ctx context.Context, params *sqs.SendMessageInpu
 }
 
 // NewSQSClient cria uma nova instância de SQSClient.
-func NewSQSClient(cfg aws.Config) ISQSClient {
+func NewSQSClient(cfg aws.Config, useLocalStack bool) ISQSClient {
+	if useLocalStack {
+		client := sqs.NewFromConfig(cfg, func(o *sqs.Options) {
+			o.EndpointResolver = sqs.EndpointResolverFunc(func(region string, options sqs.EndpointResolverOptions) (aws.Endpoint, error) {
+				return aws.Endpoint{
+					URL: "http://localhost:4566",
+				}, nil
+			})
+		})
+		return &SQSClient{client: client}
+	}
 	return &SQSClient{
 		client: sqs.NewFromConfig(cfg),
 	}

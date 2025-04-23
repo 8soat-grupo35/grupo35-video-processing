@@ -62,5 +62,5 @@ func initDefaults(config *viper.Viper) {
 	config.SetDefault("sqs_video_process_queue_name", "video-process-queue")
 	config.SetDefault("sqs_video_status_queue_name", "video-status-api-queue")
 	config.SetDefault("region", "us-east-1")
-	config.SetDefault("COGNITO_CLIENT_USER_POOL_ID", "us-east-1_jJ85wjTux")
+	config.SetDefault("COGNITO_CLIENT_USER_POOL_ID", os.Getenv("COGNITO_CLIENT_USER_POOL_ID"))
 }

@@ -94,19 +94,16 @@ func (v *VideoHandler) validateAndExtractFiles(c echo.Context) ([]*multipart.Fil
 		return nil, nil, fmt.Errorf("failed to parse form: %w", err)
 	}
 
-	userID := c.FormValue("userID")
-	if userID == "" {
-		return nil, nil, fmt.Errorf("userID is required")
-	}
+	userID := c.Get("user_id")
+	userEmail := c.Get("user_email")
 
-	userEmail := c.FormValue("userEmail")
-	if userEmail == "" {
-		return nil, nil, fmt.Errorf("userEmail is required")
+	if userID == nil || userEmail == nil {
+		return nil, nil, fmt.Errorf("user ID or email not found in context")
 	}
 
 	user := &entities.User{
-		ID:    userID,
-		Email: userEmail,
+		ID:    userID.(string),
+		Email: userEmail.(string),
 	}
 
 	videoFiles := files.File["videos"]

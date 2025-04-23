@@ -55,6 +55,10 @@ func TestUpload_Success(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, contentType)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
+	userId := "user-1"
+	email := "user@email.com"
+	c.Set("user_id", userId)
+	c.Set("user_email", email)
 
 	// Espera chamadas dos mocks
 	mockTransfer.EXPECT().UploadVideo(gomock.Any(), videoContent, gomock.Any()).Return(nil)

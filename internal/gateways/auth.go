@@ -84,7 +84,7 @@ func (a *Auth) ValidateToken(tokenString string) (*jwt.MapClaims, error) {
 }
 
 func (a *Auth) getPublicKeys() error {
-	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", a.userPoolId, a.region)
+	jwksURL := fmt.Sprintf("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", a.region, a.userPoolId)
 	fmt.Println("jwksURL", jwksURL)
 
 	resp, err := http.Get(jwksURL)
